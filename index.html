@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AegisMesh — Disaster Management & Response System</title>
+    <meta name="description" content="AegisMesh: From Disaster Reports to Response Decisions. Automated explainable priority scoring, relief shelter balancing, and responder action recommendations." />
+    
+    <!-- Leaflet 1.9.4 CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <!-- Application Style -->
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <!-- 1. Global Header -->
+    <header class="app-header" id="main-header">
+      <div class="brand-container">
+        <div class="brand-titles">
+          <h1>
+            <span>🛡️ AegisMesh</span>
+            <span class="status-pill">
+              <span class="pulse-dot"></span>
+              Live Grid Active
+            </span>
+          </h1>
+          <p>From Disaster Reports to Response Decisions • Incident Command &amp; Triage</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="nav-tabs" id="nav-tabs-bar">
+        <button class="tab-btn active" data-tab="tab-dashboard" id="nav-tab-dashboard">
+          📊 Command Dashboard
+        </button>
+        <button class="tab-btn" data-tab="tab-report" id="nav-tab-report">
+          📝 Report Disaster
+        </button>
+        <button class="tab-btn" data-tab="tab-simulation" id="nav-tab-simulation">
+          ⚡ Flood Simulation (Demo)
+        </button>
+        <button class="tab-btn" data-tab="tab-shelters" id="nav-tab-shelters">
+          🏕️ Shelters & Hospitals
+        </button>
+      </nav>
+    </header>
+
+    <!-- 2. Top KPI Metrics Ribbon -->
+    <section class="kpi-strip" id="top-kpi-strip">
+      <div class="kpi-card" id="kpi-card-total">
+        <div>
+          <div class="kpi-label">Active Incidents</div>
+          <div class="kpi-val" id="kpi-total-incidents">0</div>
+        </div>
+        <div class="kpi-icon" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">📋</div>
+      </div>
+
+      <div class="kpi-card" id="kpi-card-critical">
+        <div>
+          <div class="kpi-label">Critical Priority</div>
+          <div class="kpi-val" id="kpi-critical-incidents" style="color: #ef4444;">0</div>
+        </div>
+        <div class="kpi-icon" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">🚨</div>
+      </div>
+
+      <div class="kpi-card" id="kpi-card-affected">
+        <div>
+          <div class="kpi-label">People Affected</div>
+          <div class="kpi-val" id="kpi-people-affected" style="color: #f59e0b;">0</div>
+        </div>
+        <div class="kpi-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">👥</div>
+      </div>
+
+      <div class="kpi-card" id="kpi-card-trapped">
+        <div>
+          <div class="kpi-label">Citizens Trapped</div>
+          <div class="kpi-val" id="kpi-people-trapped" style="color: #ec4899;">0</div>
+        </div>
+        <div class="kpi-icon" style="background: rgba(236, 72, 153, 0.15); color: #f472b6;">🆘</div>
+      </div>
+
+      <div class="kpi-card" id="kpi-card-shelter">
+        <div>
+          <div class="kpi-label">Shelter Capacity</div>
+          <div class="kpi-val" id="kpi-shelter-status" style="color: #10b981; font-size: 18px;">--</div>
+        </div>
+        <div class="kpi-icon" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">🏕️</div>
+      </div>
+    </section>
+
+    <!-- 3. Main Content Panes -->
+    <main class="main-container">
+
+      <!-- TAB 1: COMMAND DASHBOARD -->
+      <section class="tab-pane active" id="tab-dashboard">
+        
+        <!-- Suggested Action Decision Banner -->
+        <div class="panel recommendations-box" id="recommendations-container" style="margin-bottom: 16px;">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span>🎯</span>
+              <span>Suggested Responder Decisions ("What Should Responders Do?")</span>
+            </div>
+            <span style="font-size: 11px; color: #38bdf8; font-weight: 600;">Autonomous Decision Engine</span>
+          </div>
+          <div class="panel-body" style="padding: 12px;" id="recommendations-list">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Split Grid: Disaster Map + Triage Feed -->
+        <div class="dashboard-grid">
+          
+          <!-- Left Column: Leaflet Map -->
+          <div class="panel" id="map-panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                <span>🗺️</span>
+                <span>Live Disaster Geo-Grid (Sector Map)</span>
+              </div>
+              <div class="map-legend">
+                <span class="legend-item"><span class="legend-dot" style="background: #ef4444;"></span> Critical</span>
+                <span class="legend-item"><span class="legend-dot" style="background: #f97316;"></span> High</span>
+                <span class="legend-item"><span class="legend-dot" style="background: #eab308;"></span> Medium</span>
+                <span class="legend-item"><span class="legend-dot" style="background: #0284c7;"></span> Safe Shelter</span>
+                <span class="legend-item"><span class="legend-dot" style="background: #dc2626;"></span> Hospital</span>
+              </div>
+            </div>
+            <div class="panel-body" style="padding: 12px;">
+              <div id="disaster-map"></div>
+              <div class="map-controls-overlay">
+                <span style="font-size: 11px; color: #94a3b8;">💡 Click anywhere on the map to pinpoint coordinates for reporting a new incident.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Incident Triage Feed & Explainable Priority -->
+          <div class="panel" id="triage-panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                <span>📋</span>
+                <span>Incident Triage & Priority Scoring</span>
+              </div>
+            </div>
+            <div class="panel-body" style="padding: 12px;">
+              
+              <!-- Filter Controls -->
+              <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+                <input type="text" id="filter-search" class="form-input" placeholder="Search location / keyword..." style="flex: 1; min-width: 140px; padding: 6px 10px; font-size: 12px;" />
+                
+                <select id="filter-status" class="form-select" style="width: auto; padding: 6px 8px; font-size: 12px;">
+                  <option value="All">All Statuses</option>
+                  <option value="Unverified">Unverified Only</option>
+                  <option value="Verified">Verified Only</option>
+                </select>
+
+                <select id="filter-severity" class="form-select" style="width: auto; padding: 6px 8px; font-size: 12px;">
+                  <option value="All">All Severities</option>
+                  <option value="Critical">Critical</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                </select>
+              </div>
+
+              <!-- List of Incidents -->
+              <div class="incident-list-container" id="incidents-list-container">
+                <!-- Rendered dynamically -->
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TAB 2: CITIZEN REPORTING FORM -->
+      <section class="tab-pane" id="tab-report">
+        <div style="max-width: 720px; margin: 0 auto;">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                <span>📝</span>
+                <span>Submit Citizen Disaster Report</span>
+              </div>
+              <span style="font-size: 11px; color: #94a3b8;">Real-time Priority Calculation Enabled</span>
+            </div>
+            
+            <form id="citizen-report-form" class="panel-body">
+              
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div class="form-group">
+                  <label class="form-label" for="report-type">Incident Type *</label>
+                  <select id="report-type" class="form-select" required>
+                    <option value="Flood">🌊 Flood</option>
+                    <option value="People Trapped">🆘 People Trapped</option>
+                    <option value="Medical Emergency">🚑 Medical Emergency</option>
+                    <option value="Fire">🔥 Fire</option>
+                    <option value="Earthquake">🏚️ Earthquake</option>
+                    <option value="Road Block">🚧 Road Block</option>
+                    <option value="Building Damage">🏢 Building Damage</option>
+                    <option value="Other">⚠️ Other</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="report-severity">Severity Level *</label>
+                  <select id="report-severity" class="form-select" required>
+                    <option value="Critical">🚨 Critical (Life-threatening emergency)</option>
+                    <option value="High">🔥 High (Immediate danger / urgent)</option>
+                    <option value="Medium" selected>⚠️ Medium (Property threat / moderate)</option>
+                    <option value="Low">ℹ️ Low (Minor blockage / advisory)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="report-location">Location / Landmark Name *</label>
+                <input type="text" id="report-location" class="form-input" placeholder="e.g. Sector 7, Subhash Nagar, Main Market" required />
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div class="form-group">
+                  <label class="form-label" for="report-affected">Estimated People Affected *</label>
+                  <input type="number" id="report-affected" class="form-input" min="1" max="10000" value="10" required />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="report-trapped">People Stranded / Trapped</label>
+                  <input type="number" id="report-trapped" class="form-input" min="0" max="1000" value="0" />
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div class="form-group">
+                  <label class="form-label" for="report-lat">Latitude (or click on map)</label>
+                  <input type="number" step="0.0001" id="report-lat" class="form-input" value="26.9124" />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="report-lng">Longitude</label>
+                  <input type="number" step="0.0001" id="report-lng" class="form-input" value="75.7873" />
+                </div>
+              </div>
+              <div id="coords-picked-status" style="font-size: 11px; color: #94a3b8; margin-top: -8px; margin-bottom: 12px;"></div>
+
+              <div class="form-group">
+                <label class="form-label" for="report-desc">Detailed Description *</label>
+                <textarea id="report-desc" class="form-textarea" rows="3" placeholder="Describe water level, injuries, road access, special hazards..." required></textarea>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div class="form-group">
+                  <label class="form-label" for="report-name">Your Name</label>
+                  <input type="text" id="report-name" class="form-input" placeholder="e.g. Ramesh Kumar" />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="report-phone">Phone / Contact</label>
+                  <input type="text" id="report-phone" class="form-input" placeholder="+91 98765 43210" />
+                </div>
+              </div>
+
+              <!-- Live Calculated Priority Score Box -->
+              <div style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase;">Estimated Priority Score</div>
+                  <div style="font-size: 12px; color: #cbd5e1;">Calculated instantaneously based on inputs</div>
+                </div>
+                <div id="report-score-preview" style="font-size: 24px; font-weight: 800; color: #38bdf8;">
+                  -- / 100
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 14px;" id="btn-submit-report">
+                🚀 Submit Incident to AegisMesh Command
+              </button>
+
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: FLOOD SIMULATION DEMO (SIH JURY PRESENTATION) -->
+      <section class="tab-pane" id="tab-simulation">
+        <div style="max-width: 880px; margin: 0 auto;">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                <span>⚡</span>
+                <span>Controlled Disaster Demonstration (SIH Jury Presentation Flow)</span>
+              </div>
+              <span style="font-size: 11px; color: #10b981; font-weight: 600;">Interactive Script</span>
+            </div>
+
+            <div class="panel-body">
+              <p style="font-size: 13px; color: #94a3b8; margin-bottom: 16px;">
+                Demonstrate the <strong>Report → Prioritize → Understand Impact → Recommend Action</strong> loop step-by-step to the hackathon judges.
+              </p>
+
+              <!-- 5-Step Progress Indicators -->
+              <div class="sim-strip">
+                <div class="sim-step-box" id="sim-step-indicator-1">
+                  <div class="sim-step-number">Step 1</div>
+                  <div>Heavy Rain</div>
+                </div>
+                <div class="sim-step-box" id="sim-step-indicator-2">
+                  <div class="sim-step-number">Step 2</div>
+                  <div>Road Block</div>
+                </div>
+                <div class="sim-step-box" id="sim-step-indicator-3">
+                  <div class="sim-step-number">Step 3</div>
+                  <div>Citizen Surge</div>
+                </div>
+                <div class="sim-step-box" id="sim-step-indicator-4">
+                  <div class="sim-step-number">Step 4</div>
+                  <div>Trapped Citizens</div>
+                </div>
+                <div class="sim-step-box" id="sim-step-indicator-5">
+                  <div class="sim-step-number">Step 5</div>
+                  <div>Response Action</div>
+                </div>
+              </div>
+
+              <!-- Current Step Card -->
+              <div style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+                <h3 id="sim-current-title" style="font-size: 16px; color: #38bdf8; margin-bottom: 6px;">[Baseline State] Ready to Run</h3>
+                <p id="sim-current-desc" style="font-size: 13px; color: #cbd5e1; line-height: 1.5;">Click "Next Step" or "Auto-Play" to simulate incoming emergency events.</p>
+              </div>
+
+              <!-- Action Controls -->
+              <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                <button class="btn btn-primary" id="sim-btn-next" style="padding: 10px 18px; font-size: 13px;">
+                  ▶ Next Simulation Step
+                </button>
+                <button class="btn btn-outline" id="sim-btn-autoplay" style="padding: 10px 18px; font-size: 13px;">
+                  ▶ Auto-Play 5 Steps
+                </button>
+                <button class="btn btn-outline" id="sim-btn-reset" style="padding: 10px 18px; font-size: 13px; color: #f87171;">
+                  🔄 Reset Baseline
+                </button>
+              </div>
+
+              <!-- Real-time Event Log -->
+              <div style="border-top: 1px solid #334155; padding-top: 14px;">
+                <h4 style="font-size: 12px; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px;">Simulation Activity Logs:</h4>
+                <div id="sim-log-list" style="max-height: 160px; overflow-y: auto;">
+                  <div style="font-size: 11px; color: #64748b;">Ready. Simulation not yet started.</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: RELIEF INFRASTRUCTURE -->
+      <section class="tab-pane" id="tab-shelters">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span>🏕️</span>
+              <span>Designated Safe Shelters & Hospital Capacity</span>
+            </div>
+            <span style="font-size: 11px; color: #38bdf8;">Real-time Resource Allocation</span>
+          </div>
+          <div class="panel-body">
+            <h4 style="font-size: 13px; color: #94a3b8; text-transform: uppercase; margin-bottom: 12px;">Relief Shelters</h4>
+            <div id="shelters-grid-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 24px;">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- 4. Modal: Explainable Priority Score Breakdown -->
+    <div class="modal-backdrop" id="priority-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 style="font-size: 15px; font-weight: 700; color: #f8fafc;" id="modal-incident-title">Priority Breakdown</h3>
+          <button class="btn btn-outline btn-sm" id="modal-close-btn" style="border: none; font-size: 16px;">✕</button>
+        </div>
+        <div class="modal-body" id="modal-breakdown-body">
+          <!-- Rendered dynamically -->
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline" id="modal-dismiss-btn">Close Inspector</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Toast Notifications Container -->
+    <div id="toast-container"></div>
+
+    <!-- Leaflet JS Library -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- Application Logic Entrypoint -->
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
